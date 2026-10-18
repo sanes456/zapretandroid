@@ -26,9 +26,20 @@ jobs:
       - name: Build debug APK
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1 | tee gradle-build.log
+
+      - name: Publish build errors
+        if: failure()
+        run: |
+          MSG=$(grep -nE "^FAILURE|What went wrong|^e: |error:|error \[|Cause:|Could not|Failed to|A problem occurred|> Task .*FAILED|Execution failed|Unresolved" gradle-build.log | tail -n 40 | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          if [ -z "$MSG" ]; then
+            MSG=$(tail -n 30 gradle-build.log | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          fi
+          echo "::error title=Gradle errors::$MSG"
 
       - uses: actions/upload-artifact@v7
+        if: success()
         with:
           name: zapret-android-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
