@@ -38,8 +38,14 @@ jobs:
             echo "::error title=Missing secrets::Добавьте секреты KEYSTORE_BASE64 и KEYSTORE_PASSWORD: Settings -> Secrets and variables -> Actions -> New repository secret"
             exit 1
           fi
+          CLEAN=$(printf '%s' "$KEYSTORE_BASE64" | tr -d ' \t\r\n')
+          echo "KEYSTORE_BASE64 raw: $(printf '%s' "$KEYSTORE_BASE64" | wc -c) chars, clean: ${#CLEAN} chars"
+          if [ "${#CLEAN}" -lt 2000 ]; then
+            echo "::error title=Bad secret::KEYSTORE_BASE64 = ${#CLEAN} символов, нужно ~2860. Значение обрезано или вставлено не то — пересоздайте секрет, вставив содержимое файла keystore-base64.txt целиком."
+            exit 1
+          fi
           mkdir -p keystore
-          echo "$KEYSTORE_BASE64" | base64 -d > keystore/zapret.jks
+          printf '%s' "$CLEAN" | base64 -d > keystore/zapret.jks
           printf 'storeFile=keystore/zapret.jks\nstorePassword=%s\nkeyAlias=zapret\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > keystore.properties
           echo "keystore ready: $(wc -c < keystore/zapret.jks) bytes"
 
@@ -52,6 +58,10 @@ jobs:
       - name: Publish build errors
         if: failure()
         run: |
+          if [ ! -f gradle-build.log ]; then
+            echo "no gradle log (failed before build)"
+            exit 0
+          fi
           MSG=$(grep -nE "^FAILURE|What went wrong|^e: |error:|error \[|Cause:|Could not|Failed to|A problem occurred|Execution failed|Unresolved" gradle-build.log | tail -n 40 | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
           if [ -z "$MSG" ]; then
             MSG=$(tail -n 30 gradle-build.log | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
