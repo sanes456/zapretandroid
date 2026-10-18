@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Версия релиза (тег), например v1.0.0'
+        description: 'Версия релиза (тег), например v1.0.1'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.0.1'
 
 permissions:
   contents: write
@@ -29,24 +29,19 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
 
-      - name: Create signing keystore (once)
+      - name: Prepare keystore from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          if [ -f keystore/zapret.jks ]; then
-            echo "keystore already exists, reusing it"
-            exit 0
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error title=Missing secrets::Добавьте секреты KEYSTORE_BASE64 и KEYSTORE_PASSWORD: Settings -> Secrets and variables -> Actions -> New repository secret"
+            exit 1
           fi
           mkdir -p keystore
-          keytool -genkeypair -v \
-            -keystore keystore/zapret.jks \
-            -storepass zapret123 -keypass zapret123 \
-            -alias zapret -keyalg RSA -keysize 2048 -validity 10950 \
-            -dname "CN=Zapret Android, O=Zapret, C=RU"
-          printf 'storeFile=keystore/zapret.jks\nstorePassword=zapret123\nkeyAlias=zapret\nkeyPassword=zapret123\n' > keystore.properties
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add keystore/zapret.jks keystore.properties
-          git commit -m "Add signing keystore for release builds"
-          git push
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore/zapret.jks
+          printf 'storeFile=keystore/zapret.jks\nstorePassword=%s\nkeyAlias=zapret\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > keystore.properties
+          echo "keystore ready: $(wc -c < keystore/zapret.jks) bytes"
 
       - name: Build release APK
         run: |
