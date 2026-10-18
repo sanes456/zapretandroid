@@ -38,7 +38,7 @@ class ByeDpiProxy {
     fun stop() {
         val t = thread ?: return
 
-        var waited = 0
+        var waited = 0L
         while (t.isAlive && waited < STOP_TIMEOUT_MS) {
             nativeStop()
             t.join(JOIN_STEP_MS)
@@ -68,7 +68,7 @@ class ByeDpiProxy {
     companion object {
         private const val TAG = "ByeDpiProxy"
         private const val BINARY_ARGV0 = "ciadpi"
-        private const val STOP_TIMEOUT_MS = 5000
+        private const val STOP_TIMEOUT_MS = 5000L
         private const val JOIN_STEP_MS = 100L
 
         init {
