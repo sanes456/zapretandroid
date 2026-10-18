@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zapret for Android</string>
+
+    <string name="status_disconnected">Отключено</string>
+    <string name="status_connected">Подключено</string>
+    <string name="status_detail_idle">Обход DPI остановлен</string>
+    <string name="status_detail_vpn">VPN активен, весь трафик идёт через локальный прокси с обходом</string>
+    <string name="status_detail_proxy">Локальный SOCKS5-прокси работает на 127.0.0.1:%1$d</string>
+
+    <string name="action_start">Запустить</string>
+    <string name="action_stop">Остановить</string>
+
+    <string name="notif_channel_name">Состояние защиты</string>
+    <string name="notif_channel_desc">Показывает, работает ли обход DPI</string>
+    <string name="notif_starting">Запуск…</string>
+    <string name="notif_connected">Подключено, SOCKS5 на 127.0.0.1:%1$d</string>
+    <string name="notif_proxy_running">SOCKS5-прокси на 127.0.0.1:%1$d</string>
+    <string name="notif_proxy_stopped">Прокси неожиданно остановился (код %1$d)</string>
+    <string name="notif_error_title">Ошибка</string>
+
+    <string name="section_strategy">Стратегия обхода</string>
+    <string name="section_settings">Настройки</string>
+    <string name="section_mode">Режим</string>
+    <string name="label_args">Доп. аргументы ciadpi</string>
+    <string name="label_udp">Проксировать UDP</string>
+    <string name="label_ipv6">Использовать IPv6</string>
+    <string name="label_boot">Автозапуск при загрузке</string>
+    <string name="label_dns">DNS-сервер</string>
+    <string name="mode_vpn">VPN (все приложения)</string>
+    <string name="mode_proxy">Только прокси</string>
+    <string name="proxy_info">Локальный SOCKS5-прокси на 127.0.0.1:%1$d. Укажите этот адрес в других приложениях или VPN-клиентах.</string>
+    <string name="credits">Основано на byedpi (ciadpi) и hev-socks5-tunnel. Лицензия MIT.</string>
+
+    <string name="toast_vpn_permission_denied">Разрешение на VPN отклонено</string>
+    <string name="toast_invalid_dns">Некорректный DNS-адрес</string>
+
+    <string name="strategy_auto">Авто: disorder → tlsrec</string>
+    <string name="strategy_auto_desc">По умолчанию Disorder 1, при обнаружении блокировки переключение на разделение TLS-записи (рекомендуется)</string>
+    <string name="strategy_disorder">Disorder</string>
+    <string name="strategy_disorder_desc">Классический обход: запрос разбивается и отправляется в обратном порядке</string>
+    <string name="strategy_split_disorder">Split + disorder</string>
+    <string name="strategy_split_disorder_desc">Разбиение по смещению SNI/Host с последующей отправкой части вне очереди</string>
+    <string name="strategy_fake">Fake (TTL)</string>
+    <string name="strategy_fake_desc">Поддельный ClientHello с малым TTL, не должен дойти до сервера</string>
+    <string name="strategy_fake_disorder">Fake + disorder</string>
+    <string name="strategy_fake_disorder_desc">Сначала фейк-пакет, затем полная переотправка, работает без md5sig</string>
+    <string name="strategy_md5sig">Fake + MD5-подпись</string>
+    <string name="strategy_md5sig_desc">Фейк-пакет с опцией TCP MD5 signature (поддерживается не на всех устройствах)</string>
+    <string name="strategy_oob">OOB</string>
+    <string name="strategy_oob_desc">Часть запроса отправляется как OOB-данные внутри SNI</string>
+    <string name="strategy_tlsrec_auto">Авто: tlsrec только при блокировке</string>
+    <string name="strategy_tlsrec_auto_desc">Без обхода по умолчанию, разделение TLS-записи применяется только при обнаружении блокировки</string>
+    <string name="strategy_none">Без обхода (обычный прокси)</string>
+    <string name="strategy_none_desc">Просто SOCKS5-прокси без приёмов обхода DPI, полезно для проверки</string>
+</resources>
