@@ -39,15 +39,21 @@ jobs:
             exit 1
           fi
           CLEAN=$(printf '%s' "$KEYSTORE_BASE64" | tr -d ' \t\r\n')
-          echo "KEYSTORE_BASE64 raw: $(printf '%s' "$KEYSTORE_BASE64" | wc -c) chars, clean: ${#CLEAN} chars"
+          echo "KEYSTORE_BASE64: ${#CLEAN} chars (expected 2860)"
           if [ "${#CLEAN}" -lt 2000 ]; then
             echo "::error title=Bad secret::KEYSTORE_BASE64 = ${#CLEAN} символов, нужно ~2860. Значение обрезано или вставлено не то — пересоздайте секрет, вставив содержимое файла keystore-base64.txt целиком."
             exit 1
           fi
           mkdir -p keystore
           printf '%s' "$CLEAN" | base64 -d > keystore/zapret.jks
+          echo "keystore: $(wc -c < keystore/zapret.jks) bytes (expected 2143)"
+          echo "KEYSTORE_PASSWORD length: ${#KEYSTORE_PASSWORD} (expected 24)"
+          if ! keytool -list -keystore keystore/zapret.jks -storepass "$KEYSTORE_PASSWORD" -alias zapret >/dev/null 2>&1; then
+            echo "::error title=Bad password::KEYSTORE_PASSWORD не подходит к ключу (длина ${#KEYSTORE_PASSWORD}). Пересоздайте секрет: в keystore-info.txt скопируйте ТОЛЬКО текст после storePassword= (24 символа) и вставьте его."
+            exit 1
+          fi
           printf 'storeFile=keystore/zapret.jks\nstorePassword=%s\nkeyAlias=zapret\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > keystore.properties
-          echo "keystore ready: $(wc -c < keystore/zapret.jks) bytes"
+          echo "keystore OK"
 
       - name: Build release APK
         run: |
