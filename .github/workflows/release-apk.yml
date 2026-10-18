@@ -2,6 +2,11 @@ name: Release APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Версия релиза (тег), например v1.0.0'
+        required: true
+        default: 'v1.0.0'
 
 permissions:
   contents: write
@@ -63,9 +68,23 @@ jobs:
         run: |
           mkdir -p out
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
-            cp app/build/outputs/apk/release/app-release.apk out/zapret-android-release.apk
+            cp app/build/outputs/apk/release/app-release.apk out/zapret-android-${{ inputs.version }}.apk
           else
-            cp app/build/outputs/apk/release/app-release-unsigned.apk out/zapret-android-release-unsigned.apk
+            cp app/build/outputs/apk/release/app-release-unsigned.apk out/zapret-android-${{ inputs.version }}-unsigned.apk
+          fi
+
+      - name: Publish GitHub Release
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/*.apk --clobber
+          else
+            gh release create "$TAG" out/*.apk \
+              --title "Zapret for Android $TAG" \
+              --notes "Установка: скачайте APK ниже и откройте его на телефоне (разрешите установку из неизвестных источников)."
           fi
 
       - uses: actions/upload-artifact@v7
