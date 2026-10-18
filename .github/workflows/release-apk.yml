@@ -1,0 +1,76 @@
+name: Release APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install SDK components
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973" "cmake;3.22.1"
+
+      - name: Create signing keystore (once)
+        run: |
+          if [ -f keystore/zapret.jks ]; then
+            echo "keystore already exists, reusing it"
+            exit 0
+          fi
+          mkdir -p keystore
+          keytool -genkeypair -v \
+            -keystore keystore/zapret.jks \
+            -storepass zapret123 -keypass zapret123 \
+            -alias zapret -keyalg RSA -keysize 2048 -validity 10950 \
+            -dname "CN=Zapret Android, O=Zapret, C=RU"
+          printf 'storeFile=keystore/zapret.jks\nstorePassword=zapret123\nkeyAlias=zapret\nkeyPassword=zapret123\n' > keystore.properties
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add keystore/zapret.jks keystore.properties
+          git commit -m "Add signing keystore for release builds"
+          git push
+
+      - name: Build release APK
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee gradle-build.log
+
+      - name: Publish build errors
+        if: failure()
+        run: |
+          MSG=$(grep -nE "^FAILURE|What went wrong|^e: |error:|error \[|Cause:|Could not|Failed to|A problem occurred|Execution failed|Unresolved" gradle-build.log | tail -n 40 | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          if [ -z "$MSG" ]; then
+            MSG=$(tail -n 30 gradle-build.log | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          fi
+          echo "::error title=Gradle errors::$MSG"
+
+      - name: Collect APK
+        if: success()
+        run: |
+          mkdir -p out
+          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
+            cp app/build/outputs/apk/release/app-release.apk out/zapret-android-release.apk
+          else
+            cp app/build/outputs/apk/release/app-release-unsigned.apk out/zapret-android-release-unsigned.apk
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: zapret-android-release-apk
+          path: out/*.apk
+          if-no-files-found: error
